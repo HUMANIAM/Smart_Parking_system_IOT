@@ -3,33 +3,25 @@ import json
 import sys
 import RemotServer
 
-#3814746172
 db ='clients.db'
 conn = sqlite.connect(db)
 cursor = conn.cursor()
-                
+
+#name, slot, rfid 
+            
                 
 try:
 	cursor.execute('''CREATE TABLE IF NOT EXISTS Client(
-				   RFID TEXT primary key not null,
-				   firstname TEXT,
-				   slot INTEGER,
-				   state INTEGER default 1,
-				   accessTime TIMESTAMP  default CURRENT_TIMESTAMP,
-				   maxHours FLOAT
-				   )
-				   ''')
-	cursor.execute('''CREATE TABLE IF NOT EXISTS Slot(
-				   slot INTEGER primary key not null,
-				   state INTEGER default 0
-				   )
-				   ''')
-	conn = sqlite.connect(db)
-	cursor = conn.cursor()
+	RFID TEXT primary key not null,
+	firstname TEXT,
+	slot INTEGER,
+	state INTEGER default 0
+	)''')
 	
-	for i in range(1, 11):
-            cursor.execute('''INSERT OR IGNORE INTO Slot (slot) VALUES(?)''', (i, ))
-            
+	cursor.execute('''CREATE TABLE IF NOT EXISTS SlotLeaving(
+	RFID TEXT primary key not null,
+	slot INTEGER
+	)''')
 	conn.commit()
 	conn.close()
 except Exception as e:
@@ -51,8 +43,8 @@ def CloseDB():
     conn.close()
     return
 
-def AllowAccess(rfid):
-	name, slot, state = IsReserve(rfid)
+def AllowAccess(rfid, stat):
+	name, slot, state = IsReserve(rfid, stat)
 	if(state != -2):
 		return name, slot, state
 	else:
@@ -60,15 +52,15 @@ def AllowAccess(rfid):
                 newUsrs = RemotServer.GetNews()
                 InsertClients(newUsrs)
                 
-                return IsReserve(rfid)
+                return IsReserve(rfid, state)
                 
 
-def IsReserve(rfid):
+def IsReserve(rfid, state):
     # -2 means the user not in the DB but -1 means user in the db but not has authentication to access the garage
     try:
         if(DBConnect() != True): return "can't connect to the db", -1
         
-        cursor.execute("SELECT * FROM Client WHERE RFID = ? AND state = 1", (rfid,)) 
+        cursor.execute("SELECT * FROM Client WHERE RFID = ? AND state = ?", (rfid, state)) 
         
         user = cursor.fetchone()
         
@@ -90,20 +82,12 @@ def InsertClients(clients):
     try:
         if(DBConnect() != True): return False
 
-        #get empty slot for the new client
-        cursor.execute('SELECT slot FROM Slot WHERE state=0 LIMIT 1')
-        emptySlot = cursor.fetchone()[0]
-
-        #change the state of this slot to busy
-        cursor.execute("UPDATE Slot SET state = ? WHERE slot = ?", (1, emptySlot))
-        conn.commit()
-        
-        
-        cmd = '''INSERT OR IGNORE INTO Client (RFID, firstName, slot, accessTime, maxHours) VALUES(?, ?, ?, ?, ?)'''
-        print('I will insert new commers into local DB')
-        for client in clients:
-            cursor.execute(cmd, (client[0], client[1], emptySlot, client[2], client[3] ))
-        conn.commit()
+        if len(clients) != 0:
+            cmd = '''INSERT OR IGNORE INTO Client (RFID, firstName, slot) VALUES(?, ?, ?)'''
+            print('I will insert new commers into local DB')
+            for client in clients:
+                cursor.execute(cmd, (client[0], client[1], client[2]))
+            conn.commit()
         return True
 
     except Exception as e:
@@ -113,12 +97,13 @@ def InsertClients(clients):
         CloseDB()
         
 
-def DeleteClient(rfid):
+def DeleteClient(rfid, slot):
     try:
-        if(DBConnect() != True): return False
+        while(DBConnect() != True):
+                time.sleep(4)
         
-        cmd = '''DELETE FROM Client WHERE RFID = ?'''
-        cursor.execute(cmd, (rfid,))
+        cmd = '''DELETE FROM Client WHERE RFID = ? AND slot = ?'''
+        cursor.execute(cmd, (rfid, slot))
         conn.commit()
         return True
     
@@ -133,7 +118,7 @@ def changeState(rfid):
     try:
         if(DBConnect() != True): return False
         
-        cursor.execute("UPDATE Client SET state = ? WHERE RFID = ?", (0, rfid))
+        cursor.execute("UPDATE Client SET state = ? WHERE RFID = ?", (1, rfid))
         conn.commit()
         
     except Exception as e :
@@ -141,4 +126,18 @@ def changeState(rfid):
 
     finally:
         CloseDB()
+
+def isInside(rfid, slot):
+        
+        while(DBConnect() != True):
+                time.sleep(4)
+
+        cursor.execute("SELECT * FROM Client WHERE RFID = ? AND state = ? AND slot = ?", (rfid, 1, slot))
+        
+        if cursor.fetchone() is not None :
+                return '1'
+        else :
+                return '0'
+        
+        
 

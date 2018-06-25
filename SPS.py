@@ -1,8 +1,10 @@
 import RPi.GPIO as GPIO
-import MFRC522
 import ServoMotor
 import UltraSonicSensor
 import signal
+from module.MFRC522 import MFRC522
+from module.pinos import PinoControle
+import TwoRfid
 import sys
 import time 
 import UserDB
@@ -15,7 +17,7 @@ PERSON_GATE = 36
 GARAGE_ID   = 1
 
 # Create an object of the class MFRC522
-MIFAREReader = MFRC522.MFRC522()
+#MIFAREReader = MFRC522.MFRC522()
 
 # Capture SIGINT for cleanup when the script is aborted
 def end_read(signal,frame):
@@ -52,17 +54,18 @@ def setupComponents():
 
 
 def readRFID():
-    global MIFAREReader
+    global nfc
 
     # Scan for cards    
-    (status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL)
+    #(status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL)
+    gid1,gid2 = nfc.obtem_nfc_rfid()
 
     # If a card is found
-    if status == MIFAREReader.MI_OK:
-        print ("Card detected")
+    #if status == MIFAREReader.MI_OK:
+        #print ("Card detected")
 
     # Get the UID of the card
-    (status,uid) = MIFAREReader.MFRC522_Anticoll()
+    #(status,uid) = MIFAREReader.MFRC522_Anticoll()
     
     #if status is okey
     if status == MIFAREReader.MI_OK:
@@ -76,22 +79,20 @@ def main():
     setupComponents()
     
     # This loop keeps checking for chips. If one is near it will get the UID and authenticate
-
+    nfc = TwoRfid.Nfc522()          #create object to read from 2 different rfid
     while continue_reading:
+
         #read RFID
-        found, Uid = readRFID()
-        
-        if found:
-            person = False
-            # Print UID
-            print ("Card read UID: "+Uid)
+        #found, Uid = readRFID()
+        gid1,gid2 = nfc.obtem_nfc_rfid()
 
-            name, slot, state = UserDB.AllowAccess(Uid)
-
-            #alter the user that the card is read
+        #handle car gate
+        if not gid1==0:
+            print("rfid reader of car gate read: ", gid1 )
             buzzer.beep(1)
-             
-            if(state == 1):
+
+            name, slot, state = UserDB.AllowAccess(str(gid1), 0)
+            if(state == 0):                                 #this person has a reservation
                 lcd.message("WELCOME ", name)
 
                 time.sleep(2)
@@ -103,36 +104,45 @@ def main():
 
                     #make microController open specific slot
 
-                    UserDB.changeState(Uid)
+                    UserDB.changeState(gid1)
                     time.sleep(3)
                     ServoMotor.CloseGate()  #close the gate
 
-            elif(state == -2):
+            elif(state == -2):                              #this person not has a reservation
                 lcd.message("Please ", "Reserve First")
 
-            else:
- 
-				#check if the client enter the garage to get something from a car
-				#or for get out a car from the garage. we can do that by ask the server
+            time.sleep(5)
+            lcd.message("WELCOME IN", "SMART PARKING" )
 
-                person = True
+
+        #handle person gate
+        if not gid2==0:
+            print("rfid reader of person gate read: ", gid2 )
+            buzzer.beep(1)
+
+            name, slot, state = UserDB.IsReserve(str(gid2), 1)
+            if state == 1:                                      #this person has a car inside the garage
                 #open the gate
                 lcd.message("Here you are", "The Gate is open")
-                time.sleep(3)
-                
-                #light a led refers to that the gate is opened
                 GPIO.output(PERSON_GATE, True)
-                
-                slots = RemotServer.cancellation(rfid, GARAGE_ID)		#which slot he/she will leave?
-                
-                if len(slots) != 0:
-                	lcd.message("your car is", "ready to leave")
-                	for s in slots:
-                		#open the slot
-                		i=5
+                time.sleep(6)
+                GPIO.output(PERSON_GATE, False)
 
-            if(not person): time.sleep(6)
+                #open cancellation slots
+                #slots = RemotServer.cancellation(rfid, GARAGE_ID)
+                """
+                if len(slots) != 0:
+                    lcd.message("your car is", "ready to leave")
+                    for s in slots:
+                        #open the slot
+                        i=5
+                """ 
+            else :
+                lcd.message("Sorry You don't ", "Have car inside" )
+
+            time.sleep(5)
             lcd.message("WELCOME IN", "SMART PARKING" )
+
 
 
 if __name__ == "__main__":
