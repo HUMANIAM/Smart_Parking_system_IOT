@@ -1,18 +1,28 @@
 import urllib.request as urlrequest
+#import requests
 import json
 import sys
 import time
 from socket import timeout
 import eventlet
-
 GARAGE_ID = '1'
-ulr = 'http://156.217.227.244:8000/api/getNewReservations/' + GARAGE_ID 
+url = 'http://192.168.43.191:8000/api/getNewReservations/' + GARAGE_ID 
   
 def GetNews():
     users = []
     user = []
     try:
-        newUsers = urlrequest.urlopen(ulr, timeout=10).read().decode()
+
+        #get new reservation from the server
+        """
+        garage = (json.dumps({"ID":1})).encode('utf-8')
+        req = urlrequest.Request(url)
+        req.add_header('Content-Type', 'application/json; charset=utf-8')
+        req.add_header('Content-Length', len(garage))
+        newUsers = urllib.request.urlopen(req, garage, timeout=10)
+        """
+            
+        newUsers = urlrequest.urlopen(url, timeout=10).read().decode()
         
         newUsers = json.loads(newUsers)
 		

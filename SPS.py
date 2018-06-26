@@ -2,6 +2,9 @@ import RPi.GPIO as GPIO
 import ServoMotor
 import UltraSonicSensor
 import signal
+import json
+import urllib.request as urlrequest
+from socket import timeout
 from module.MFRC522 import MFRC522
 from module.pinos import PinoControle
 import TwoRfid
@@ -15,11 +18,14 @@ import RemotServer
 continue_reading = True
 PERSON_GATE = 36
 GARAGE_ID   = 1
+url = "http://0.0.0.0:5000/api/open"
 
 # Create an object of the class MFRC522
 #MIFAREReader = MFRC522.MFRC522()
 
 # Capture SIGINT for cleanup when the script is aborted
+#################################
+#end reading of tags
 def end_read(signal,frame):
     global continue_reading
     print ("Ctrl+C captured, ending read.")
@@ -30,6 +36,8 @@ def end_read(signal,frame):
     UltraSonicSensor.GPIO.cleanup()
     buzzer.GPIO.cleanup()
 
+#####################################
+#setup componenets
 def setupComponents():
     #initialize buzzer
     buzzer.setup()
@@ -52,20 +60,13 @@ def setupComponents():
     print ("Welcome to the MFRC522 data read example")
     print ("Press Ctrl-C to stop.")
 
-
+################################
+#read rfid tag
 def readRFID():
     global nfc
 
     # Scan for cards    
-    #(status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL)
     gid1,gid2 = nfc.obtem_nfc_rfid()
-
-    # If a card is found
-    #if status == MIFAREReader.MI_OK:
-        #print ("Card detected")
-
-    # Get the UID of the card
-    #(status,uid) = MIFAREReader.MFRC522_Anticoll()
     
     #if status is okey
     if status == MIFAREReader.MI_OK:
@@ -73,6 +74,22 @@ def readRFID():
         return True, Uid
     else:
         return False, ""
+
+#####################################
+#open specific slot    
+def openSlot(rfid, slot):
+	jsData = json.dumps({"RFID":rfid, "slot": slot})
+	jsData = jsData.encode('utf-8')
+	
+	req = urlrequest.Request(url)
+	req.add_header('Content-Type', 'application/json; charset=utf-8')
+	req.add_header('Content-Length', len(jsData))
+	
+	urlrequest.urlopen(req, jsData)
+	return
+
+############################################
+#main
 
 def main():
     #intialize the components of the project
@@ -82,8 +99,7 @@ def main():
     nfc = TwoRfid.Nfc522()          #create object to read from 2 different rfid
     while continue_reading:
 
-        #read RFID
-        #found, Uid = readRFID()
+        #read RFID of people entry and car entry
         gid1,gid2 = nfc.obtem_nfc_rfid()
 
         #handle car gate
@@ -102,17 +118,18 @@ def main():
                  #wait till the car pass the gate
                 if(UltraSonicSensor.IsPassed()):
 
-                    #make microController open specific slot
-
                     UserDB.changeState(gid1)
                     time.sleep(3)
                     ServoMotor.CloseGate()  #close the gate
+                    
+                    #make microController open specific slot
+                    openSlot(str(gid1), slot)
+                    lcd.message("WELCOME IN", "SMART PARKING" )
 
             elif(state == -2):                              #this person not has a reservation
                 lcd.message("Please ", "Reserve First")
-
-            time.sleep(5)
-            lcd.message("WELCOME IN", "SMART PARKING" )
+                time.sleep(5)
+                lcd.message("WELCOME IN", "SMART PARKING" )
 
 
         #handle person gate
@@ -128,19 +145,11 @@ def main():
                 time.sleep(6)
                 GPIO.output(PERSON_GATE, False)
 
-                #open cancellation slots
-                #slots = RemotServer.cancellation(rfid, GARAGE_ID)
-                """
-                if len(slots) != 0:
-                    lcd.message("your car is", "ready to leave")
-                    for s in slots:
-                        #open the slot
-                        i=5
-                """ 
             else :
                 lcd.message("Sorry You don't ", "Have car inside" )
+                time.sleep(5)
 
-            time.sleep(5)
+            
             lcd.message("WELCOME IN", "SMART PARKING" )
 
 
