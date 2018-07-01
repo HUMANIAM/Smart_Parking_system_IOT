@@ -12,10 +12,11 @@ cursor = conn.cursor()
                 
 try:
 	cursor.execute('''CREATE TABLE IF NOT EXISTS Client(
-	RFID TEXT primary key not null,
-	firstname TEXT,
-	slot INTEGER,
-	state INTEGER default 0
+	RFID TEXT not null,
+	firstname TEXT not null,
+	slot INTEGER not null,
+	state INTEGER default 0,
+    PRIMARY KEY (RFID, slot)
 	)''')
 	
 	cursor.execute('''CREATE TABLE IF NOT EXISTS SlotLeaving(
@@ -52,7 +53,7 @@ def AllowAccess(rfid, stat):
                 newUsrs = RemotServer.GetNews()
                 InsertClients(newUsrs)
                 
-                return IsReserve(rfid, state)
+                return IsReserve(rfid, stat)
                 
 
 def IsReserve(rfid, state):
@@ -97,19 +98,19 @@ def InsertClients(clients):
         CloseDB()
         
 
-def DeleteClient(rfid, slot):
+def DeleteClient(slot):
     try:
         while(DBConnect() != True):
                 time.sleep(4)
         
-        cmd = '''DELETE FROM Client WHERE RFID = ? AND slot = ?'''
-        cursor.execute(cmd, (rfid, slot))
+        cmd = '''DELETE FROM Client WHERE slot = ?'''
+        cursor.execute(cmd, (slot,))
         conn.commit()
-        return True
+        return '1'
     
     except Exception as e:
         print('delete error ', e)
-        return False
+        return '0'
     
     finally:
         CloseDB()
@@ -127,12 +128,12 @@ def changeState(rfid):
     finally:
         CloseDB()
 
-def isInside(rfid, slot):
+def isInside(slot):
         
         while(DBConnect() != True):
                 time.sleep(4)
 
-        cursor.execute("SELECT * FROM Client WHERE RFID = ? AND state = ? AND slot = ?", (rfid, 1, slot))
+        cursor.execute("SELECT * FROM Client WHERE state = ? AND slot = ?", (1, slot))
         
         if cursor.fetchone() is not None :
                 return '1'

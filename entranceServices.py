@@ -25,9 +25,21 @@ def DeleteClient():
         jsData = request.get_json(silent=True)
         if type(jsData) == 'str':
                 jsData = json.loads(jsData)
-        done = UserDB.DeleteClient(jsData["RFID"], jsData["slot"])
-        if done : return "yes"
-        else: return "no"
+
+        i = len(jsData["slot"])
+        j = 0
+        response = {"status":[]}
+
+        while j < i:
+                slot = int(jsData["slot"][j])
+                print(slot)
+                response["status"].append(UserDB.DeleteClient(slot))
+                j = j + 1
+
+        print(response)
+        response = json.dumps(response).encode('utf-8')
+
+        return response
 
 #check if clients in local DB or no
 @app.route('/api/IsInside', methods=['GET', 'POST'])
@@ -37,22 +49,25 @@ def isInside():
         if type(jsData) == 'str':
                 jsData = json.loads(jsData)
        
-        i = len(jsData["RFID"])
+        i = len(jsData["slot"])
         j = 0
         response = {"status":[]}
 
+        print(jsData['slot'])
+
+
         while j < i:
-                response["status"].append(UserDB.isInside(str(jsData["RFID"][j]), int(jsData["slot"][j])))
+                response["status"].append(UserDB.isInside(int(jsData["slot"][j])))
                 j = j + 1
 
         print(response)
         response = json.dumps(response).encode('utf-8')
         
         
-        return "response"
+        return response
         
 
 
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0')
+        app.run(debug=True, host='0.0.0.0')
 

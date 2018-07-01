@@ -1,5 +1,7 @@
 import RPi.GPIO as GPIO
-import MFRC522
+from module.MFRC522 import MFRC522
+from module.pinos import PinoControle
+import TwoRfid
 import ServoMotor
 import UltraSonicSensor
 import signal
@@ -12,9 +14,6 @@ import buzzer
 continue_reading = True
 PERSON_GATE = 36
 GARAGE_ID   = 1
-
-# Create an object of the class MFRC522
-MIFAREReader = MFRC522.MFRC522()
 
 # Capture SIGINT for cleanup when the script is aborted
 def end_read(signal,frame):
@@ -68,13 +67,16 @@ def main():
     #intialize the components of the project
     setupComponents()
     
+    nfc = TwoRfid.Nfc522()          #create object to read from 2 different rfid
+    
     # This loop keeps checking for chips. If one is near it will get the UID and authenticate
 
     while continue_reading:
         #read RFID
-        found, Uid = readRFID()
-        
-        if found:
+        gid1,gid2 = nfc.obtem_nfc_rfid()
+        Uid = str(gid1)
+
+        if  not Uid == '0':
             person = False
             # Print UID
             print ("Card read UID: "+Uid)

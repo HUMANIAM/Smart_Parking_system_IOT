@@ -18,6 +18,7 @@ SLOT_COUNT = 2
 SLOTS = [32, 33]			#slots bins			
 ECHOS = [10, 37]			#echos bins of ultrasonic
 TRIGS = [8, 35]			#triggers bins of ultrasonic
+activeThreads = [0, 0]
 
 #intialize slots leds with False
 for i in range(SLOT_COUNT):
@@ -83,9 +84,62 @@ class Openthread (threading.Thread):
 		
 		#change state of the slot from empty to busy 
 		if dd < 11 :
-			UserDB.changestate(self.slot)
+			UserDB.changestate(self.slot, 1)
 
-######################################		
+######################################
+
+			
+class leavethread (threading.Thread):
+	def __init__(self, slot):
+		threading.Thread.__init__(self)
+		self.slot = slot
+		
+	def run(self):
+		try:
+			#wait till the client push the push button if he/she doesn't push it through 5 min ignore the request
+			print(' leave  thread')
+			t = time.time()
+			dt=0
+			dd= distance(self.slot - 1)
+			
+			#wait if time is less than 6 min and dd greater than 11
+			#wait if dd between 12 cm and 2.5 meter
+			while (dt < 300 and dd > 11) :
+					dt = time.time() - t
+					dd = distance(self.slot - 1)
+					print(dd)
+					
+			#close the slot
+			if dd < 11:
+				print('client push the button')
+				GPIO.output(SLOTS[self.slot - 1], True)
+				
+			#wait 10 min untill the user take his/her car
+			t = time.time()
+			dt=0
+			dd= distance(self.slot - 1)
+			
+			while ((dt < 600 and dd < 200) or (dd > 11 and dd < 200)):
+				dt = time.time() - t
+				dd = distance(self.slot - 1)
+				print(dd)
+				
+			#close the slot lock
+			GPIO.output(SLOTS[self.slot - 1], False)
+				
+			if dd>200:
+				#make slot empty
+				UserDB.changestate(self.slot, 0)
+				
+		except Exception as e:
+			print('error in leavethread : ', e)
+			
+		finally:
+			activeThreads[self.slot - 1] = 0
+					
+######################################	
+
+	
 
 app = Flask(__name__)
 @app.route('/api/newcar', methods=['GET', 'POST'])
@@ -102,15 +156,18 @@ def newCar():
 		return '0'
 		
 	
-@app.route('/api/openslot', methods=['GET', 'POST']))
+@app.route('/api/openslot', methods=['GET', 'POST'])
 def leavecar():
 	try:
+		
 		jsData = request.get_json(silent=True)
 		if type(jsData) == 'str':
 			jsData = json.loads(jsData)
 			
-		thread1 = Openthread(jsData["RFID"], jsData["slot"])
-		thread1.start()
+		if activeThreads[jsData['slot'] - 1] == 0:
+			thread1 = leavethread(jsData["slot"])
+			thread1.start()
+			activeThreads[jsData['slot'] - 1] = 1
 		return '1'
 	except:
 		return '0'

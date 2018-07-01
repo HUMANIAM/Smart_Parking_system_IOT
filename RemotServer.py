@@ -6,7 +6,7 @@ import time
 from socket import timeout
 import eventlet
 GARAGE_ID = '1'
-url = 'http://192.168.43.191:8000/api/getNewReservations/' + GARAGE_ID 
+url = 'http://156.217.116.191:8000/api/getNewReservations/'
   
 def GetNews():
     users = []
@@ -14,15 +14,13 @@ def GetNews():
     try:
 
         #get new reservation from the server
-        """
         garage = (json.dumps({"ID":1})).encode('utf-8')
         req = urlrequest.Request(url)
         req.add_header('Content-Type', 'application/json; charset=utf-8')
         req.add_header('Content-Length', len(garage))
-        newUsers = urllib.request.urlopen(req, garage, timeout=10)
-        """
+        newUsers = urlrequest.urlopen(req, garage, timeout=10).read().decode()
             
-        newUsers = urlrequest.urlopen(url, timeout=10).read().decode()
+        #newUsers = urlrequest.urlopen(url, timeout=10).read().decode()
         
         newUsers = json.loads(newUsers)
 		
