@@ -19,6 +19,7 @@ SLOTS = [32, 33]			#slots bins
 ECHOS = [10, 37]			#echos bins of ultrasonic
 TRIGS = [8, 35]			#triggers bins of ultrasonic
 activeThreads = [0, 0]
+PB_SLOTS = [18, 31]
 
 #intialize slots leds with False
 for i in range(SLOT_COUNT):
@@ -26,6 +27,7 @@ for i in range(SLOT_COUNT):
 	GPIO.setup(ECHOS[i],GPIO.IN)
 	GPIO.setup(SLOTS[i], GPIO.OUT)
 	GPIO.output(SLOTS[i], False)
+	GPIO.setup(PB_SLOTS[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 ######################################
@@ -100,32 +102,34 @@ class leavethread (threading.Thread):
 			print(' leave  thread')
 			t = time.time()
 			dt=0
-			dd= distance(self.slot - 1)
+			state= True
 			
-			#wait if time is less than 6 min and dd greater than 11
-			#wait if dd between 12 cm and 2.5 meter
-			while (dt < 300 and dd > 11) :
+			#wait the client press the pB if he don't through 5 min ignore his request
+			while (dt < 300 and state == True) :
+					dt = time.time() - t
+					state = GPIO.input(PB_SLOTS[self.slot - 1])
+					
+			#open the slot
+			if state == False:
+				while GPIO.input(PB_SLOTS[self.slot - 1]) == False:
+					time.sleep(0.2)
+
+				print('client push the button')
+				GPIO.output(SLOTS[self.slot - 1], True)
+
+				#wait 10 min untill the user take his/her car
+				t = time.time()
+				dt=0
+				dd= distance(self.slot - 1)
+				print(dd)
+
+				while ((dt < 600 and dd < 200) or (dd > 11 and dd < 200)):
 					dt = time.time() - t
 					dd = distance(self.slot - 1)
 					print(dd)
-					
-			#close the slot
-			if dd < 11:
-				print('client push the button')
-				GPIO.output(SLOTS[self.slot - 1], True)
 				
-			#wait 10 min untill the user take his/her car
-			t = time.time()
-			dt=0
-			dd= distance(self.slot - 1)
-			
-			while ((dt < 600 and dd < 200) or (dd > 11 and dd < 200)):
-				dt = time.time() - t
-				dd = distance(self.slot - 1)
-				print(dd)
-				
-			#close the slot lock
-			GPIO.output(SLOTS[self.slot - 1], False)
+				#close the slot lock
+				GPIO.output(SLOTS[self.slot - 1], False)
 				
 			if dd>200:
 				#make slot empty
@@ -148,7 +152,7 @@ def newCar():
 		jsData = request.get_json(silent=True)
 		if type(jsData) == 'str':
 			jsData = json.loads(jsData)
-			
+		
 		thread1 = Openthread(jsData["RFID"], jsData["slot"])
 		thread1.start()
 		return '1'
@@ -163,13 +167,17 @@ def leavecar():
 		jsData = request.get_json(silent=True)
 		if type(jsData) == 'str':
 			jsData = json.loads(jsData)
+
+		print("open slot", jsData['slot'])
 			
 		if activeThreads[jsData['slot'] - 1] == 0:
+			print("slot : ", jsData["slot"])
 			thread1 = leavethread(jsData["slot"])
 			thread1.start()
 			activeThreads[jsData['slot'] - 1] = 1
 		return '1'
-	except:
+	except Exception as e:
+		print(e)
 		return '0'
 
 if __name__ == '__main__':
