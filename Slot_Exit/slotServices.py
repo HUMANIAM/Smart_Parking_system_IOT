@@ -16,7 +16,7 @@ GPIO.setwarnings(False)
 
 SLOT_COUNT = 2
 SLOTS = [32, 33]			#slots bins			
-ECHOS = [10, 37]			#echos bins of ultrasonic
+ECHOS = [12, 37]			#echos bins of ultrasonic
 TRIGS = [8, 35]			#triggers bins of ultrasonic
 activeThreads = [0, 0]
 PB_SLOTS = [18, 31]
@@ -74,7 +74,7 @@ class Openthread (threading.Thread):
 		
 		#wait if time is less than 6 min and dd greater than 11
 		#wait if dd between 12 cm and 2.5 meter
-		while ((dt < 600 and dd > 11) or (dd > 11 and dd < 250)):
+		while ((dt < 600 and dd > 11) or (dd > 4 and dd < 12)):
 				dt = time.time() - t
 				dd = distance(self.slot - 1)
 				print(dd)
@@ -123,7 +123,7 @@ class leavethread (threading.Thread):
 				dd= distance(self.slot - 1)
 				print(dd)
 
-				while ((dt < 600 and dd < 200) or (dd > 11 and dd < 200)):
+				while ((dt < 600 and dd < 200) or (dd > 4 and dd < 12)):
 					dt = time.time() - t
 					dd = distance(self.slot - 1)
 					print(dd)

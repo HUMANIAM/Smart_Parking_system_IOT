@@ -78,15 +78,18 @@ def readRFID():
 #####################################
 #open specific slot    
 def openSlot(rfid, slot):
-	jsData = json.dumps({"RFID":rfid, "slot": slot})
-	jsData = jsData.encode('utf-8')
-	
-	req = urlrequest.Request(url)
-	req.add_header('Content-Type', 'application/json; charset=utf-8')
-	req.add_header('Content-Length', len(jsData))
-	
-	urlrequest.urlopen(req, jsData)
-	return
+    try:
+        jsData = json.dumps({"RFID":rfid, "slot": slot})
+        jsData = jsData.encode('utf-8')
+
+        req = urlrequest.Request(url)
+        req.add_header('Content-Type', 'application/json; charset=utf-8')
+        req.add_header('Content-Length', len(jsData))
+
+        urlrequest.urlopen(req, jsData, timeout=10)
+
+    except Exception as e:
+        print(e)
 
 ############################################
 #main

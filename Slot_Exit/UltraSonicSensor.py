@@ -41,13 +41,13 @@ def IsPassed():
     print('wait untill the car passing the gate')
     d = distance()
     #print("before passing ")
-    while(d> 50):
+    while(d> 12):
         d = distance()
         print(d)
         pass
 	time.sleep(1)
     #print('during passing')
-    while(d<= 50):
+    while(d<= 12):
         d = distance() 
         print(d)
         pass

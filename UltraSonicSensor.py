@@ -17,6 +17,8 @@ def distance():
 
     GPIO.output(TRIG, False)
 
+    pulse_start = pulse_end = time.time()
+
     while GPIO.input(ECHO)==0:
         pulse_start = time.time()
 
@@ -40,13 +42,13 @@ def IsPassed():
     print('wait untill the car passing the gate')
     d = distance()
     #print("before passing ")
-    while(d> 50):
+    while(d> 12):
         d = distance()
         print(d)
         pass
 
     #print('during passing')
-    while(d<= 50):
+    while(d<= 12):
         d = distance()
         print(d)
         pass

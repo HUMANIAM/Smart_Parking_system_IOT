@@ -3,6 +3,9 @@ import time
 
 Buzzer = 3
 
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(Buzzer,GPIO.OUT)  
+
 def setup():
 	global Buzzer
 	GPIO.setmode(GPIO.BOARD)       # Numbers GPIOs by physical location
