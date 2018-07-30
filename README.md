@@ -11,5 +11,5 @@ It consists of 3 main components:
 
 ##More Information
 * [Documentation](https://drive.google.com/open?id=12V__od2d6d4arQ3nZSiEcvm651qiWNec)
-* ![alt text](https://drive.google.com/open?id=1vyCMv0QCCoSFb1JZETJKkZWbOk7TQcrl)
+* ![alt text](https://drive.google.com/file/d/1vyCMv0QCCoSFb1JZETJKkZWbOk7TQcrl/view)
 
