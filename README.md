@@ -9,3 +9,7 @@ It consists of 3 main components:
 * **Android app** (each user has an app to reserve)
 * **Admin Panel** (run by the administrator)
 
+##More Information
+* [Documentation](https://drive.google.com/open?id=12V__od2d6d4arQ3nZSiEcvm651qiWNec)
+* ![alt text](https://drive.google.com/open?id=1vyCMv0QCCoSFb1JZETJKkZWbOk7TQcrl)
+
