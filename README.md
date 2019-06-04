@@ -10,7 +10,7 @@ It consists of 3 main components:
 * **Admin Panel** (run by the administrator)
 
 ## More Information
-* [Documentation](https://drive.google.com/open?id=12V__od2d6d4arQ3nZSiEcvm651qiWNec)
+* [Documentation]()
 * **Big Picture of the Project**
 * ![Big Picture of the Project](http://i66.tinypic.com/n3re9w.png)
 
